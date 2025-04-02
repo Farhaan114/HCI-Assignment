@@ -1,6 +1,11 @@
 const express = require('express');
 const pool = require('./config/db');
 const createUsersTable = require('./models/users');
+const createChatsTable = require('./models/chats');
+const createVideoCallsTable = require('./models/video_calls');
+const createTasksTable = require('./models/tasks');
+
+
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -16,6 +21,9 @@ pool.connect((err, client, release) => {
 
 // Call the function to create the table
 createUsersTable();
+createChatsTable();
+createVideoCallsTable();
+createTasksTable();
 
 app.get('/', (req, res) => {
   res.send('Hello World!');
