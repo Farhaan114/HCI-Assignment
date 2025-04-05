@@ -1,0 +1,31 @@
+1. Task reminders
+
+CREATE TABLE task_reminders (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    message TEXT NOT NULL,
+    scheduled_time TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+2. Chat Summaries (Stores AI-generated chat summaries)
+
+CREATE TABLE chat_summaries (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    chat_id UUID REFERENCES messages(id) ON DELETE CASCADE,
+    summary TEXT NOT NULL,
+    generated_at TIMESTAMP DEFAULT NOW()
+);
+
+
+
+3. Sentiment Analysis (Stores AI sentiment analysis of messages)
+
+CREATE TABLE sentiment_analysis (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    message_id UUID REFERENCES messages(id) ON DELETE CASCADE,
+    sentiment VARCHAR(20) CHECK (sentiment IN ('positive', 'neutral', 'negative')),
+    confidence DECIMAL(5,2),
+    analyzed_at TIMESTAMP DEFAULT NOW()
+);
+

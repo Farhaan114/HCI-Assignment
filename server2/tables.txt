@@ -1,0 +1,21 @@
+Eye Gazing Microservice (FastAPI)
+1. Eye Tracking Sessions (Stores engagement data for meetings)
+
+CREATE TABLE eye_tracking_sessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    session_id UUID REFERENCES calls(id) ON DELETE CASCADE,
+    is_engaged BOOLEAN NOT NULL,
+    engagement_score DECIMAL(5,2),
+    checked_at TIMESTAMP DEFAULT NOW()
+);
+2. Engagement Logs (Stores periodic logs of user eye engagement)
+
+CREATE TABLE engagement_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    session_id UUID REFERENCES calls(id) ON DELETE CASCADE,
+    eye_contact BOOLEAN NOT NULL,
+    distracted BOOLEAN NOT NULL,
+    log_time TIMESTAMP DEFAULT NOW()
+);
