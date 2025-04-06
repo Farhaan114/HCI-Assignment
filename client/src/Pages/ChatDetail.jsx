@@ -179,25 +179,31 @@ const ChatDetail = () => {
       console.log("Setting remote video from effect");
       videoRefRemote.current.srcObject = remoteStream;
       // Ensure video plays automatically
-      videoRefRemote.current.play().catch(err => console.error("Play error:", err));
+      // videoRefRemote.current.play().catch(err => console.error("Play error:", err));
     }
-  }, [remoteStream, videoRefRemote.current]);
+  }, [remoteStream]);
 
   const handleJoinCall = async () => {
     try {
+      // Create peer connection first
       const pc = createPeerConnection();
       setPeerConnection(pc);
-    
+      
+      // Get user media
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       setLocalStream(stream);
       
       // Check if ref exists before setting srcObject
       if (videoRefLocal.current) {
         videoRefLocal.current.srcObject = stream;
+      } else {
+        console.warn("Local video ref not available");
       }
       
+      // Add tracks to the peer connection
       stream.getTracks().forEach(track => pc.addTrack(track, stream));
-    
+      
+      // Create and send offer
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
       
@@ -208,6 +214,10 @@ const ChatDetail = () => {
       } else {
         console.error("Socket not available when trying to send offer");
       }
+      
+      // Log connection state
+      console.log("ICE connection state:", pc.iceConnectionState);
+      console.log("Connection state:", pc.connectionState);
     } catch (err) {
       console.error("Error in handleJoinCall:", err);
       setError("Failed to setup media connection. Please check camera/mic permissions.");
@@ -283,7 +293,9 @@ const ChatDetail = () => {
   const handleAcceptCall = () => {
     setIncomingCall(false);
     setIsCalling(true);
-    handleJoinCall();
+    setTimeout(() => {
+      handleJoinCall();
+    }, 100);
   };
 
   const handleDeclineCall = () => {
@@ -359,6 +371,28 @@ const checkConnectionStatus = () => {
     setTimeout(checkConnectionStatus, 3000); // Check every 3 seconds
   }
 };
+
+useEffect(() => {
+  // Only run this effect when remoteStream changes and exists
+  if (remoteStream) {
+    console.log("Remote stream available, attempting to attach to video element");
+    
+    // Function to attach stream to video element
+    const attachStreamToVideo = () => {
+      if (videoRefRemote.current) {
+        console.log("Attaching remote stream to video element");
+        videoRefRemote.current.srcObject = remoteStream;
+        // Don't call play() directly - let autoPlay handle it
+      } else {
+        console.log("Video ref still not available, retrying in 100ms");
+        // Try again in a short while
+        setTimeout(attachStreamToVideo, 100);
+      }
+    };
+    
+    attachStreamToVideo();
+  }
+}, [remoteStream]);
 
   return (
     <div className="container-fluid h-100">
@@ -488,44 +522,45 @@ const checkConnectionStatus = () => {
       </div>
       
       {/* Video call modals */}
-      {isCalling && (
-        <div className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" style={{ backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 1050 }}>
-          <div className="card" style={{ width: '80%', maxWidth: '800px' }}>
-            <div className="card-header d-flex justify-content-between align-items-center">
-              <h5 className="mb-0">Call with {oppositeUsername}</h5>
-              <button className="btn btn-danger" onClick={handleEndCall}>End Call</button>
+      // Update your video call modal code
+{isCalling && (
+  <div className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" 
+       style={{ backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 1050 }}>
+    <div className="card" style={{ width: '80%', maxWidth: '800px' }}>
+      <div className="card-header d-flex justify-content-between align-items-center">
+        <h5 className="mb-0">Call with {oppositeUsername}</h5>
+        <button className="btn btn-danger" onClick={handleEndCall}>End Call</button>
+      </div>
+      <div className="card-body">
+        <div className="video-call-section mt-2">
+          <div className="video-container d-flex justify-content-center gap-3">
+            <div style={{ position: 'relative', width: '45%' }}>
+              <video
+                ref={videoRefLocal}
+                autoPlay
+                muted
+                playsInline
+                className="w-100 h-auto"
+                style={{ borderRadius: '10px', border: '1px solid #ccc', backgroundColor: '#f0f0f0' }}
+              />
+              <p className="position-absolute bottom-0 start-0 bg-dark text-white p-1 m-2 rounded">You</p>
             </div>
-            <div className="card-body">
-              <div className="video-call-section mt-2">
-              <div className="video-container d-flex justify-content-center gap-3">
-                <div style={{ position: 'relative', width: '45%' }}>
-                  <video
-                    ref={videoRefLocal}
-                    autoPlay
-                    muted
-                    playsInline
-                    className="w-100"
-                    style={{ borderRadius: '10px', border: '1px solid #ccc' }}
-                  />
-                  <span className="position-absolute bottom-0 left-0 bg-dark text-white p-1 rounded m-2">You</span>
-                </div>
-                <div style={{ position: 'relative', width: '45%' }}>
-                  <video
-                    ref={videoRefRemote}
-                    autoPlay
-                    playsInline
-                    className="w-100"
-                    style={{ borderRadius: '10px', border: '1px solid #ccc' }}
-                  />
-                  <span className="position-absolute bottom-0 left-0 bg-dark text-white p-1 rounded m-2">{oppositeUsername}</span>
-                </div>
-              </div>
-              </div>
-              <audio ref={audioRefRemote} autoPlay />
+            <div style={{ position: 'relative', width: '45%' }}>
+              <video
+                ref={videoRefRemote}
+                autoPlay
+                playsInline
+                className="w-100 h-auto"
+                style={{ borderRadius: '10px', border: '1px solid #ccc', backgroundColor: '#f0f0f0' }}
+              />
+              <p className="position-absolute bottom-0 start-0 bg-dark text-white p-1 m-2 rounded">{oppositeUsername}</p>
             </div>
           </div>
         </div>
-      )}
+      </div>
+    </div>
+  </div>
+)}
       
       {incomingCall && !isCalling && (
         <div className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" style={{ backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 1050 }}>
