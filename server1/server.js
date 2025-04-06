@@ -21,6 +21,7 @@ const io = new Server(server, {
     origin: [
       "http://localhost:5173",
       "http://localhost:5174",
+      "https://9937-182-74-172-122.ngrok-free.app"
     ],
     methods: ["GET", "POST"]
   }
@@ -33,7 +34,8 @@ app.use(express.json());
 app.use(cors({
   origin: [
     "http://localhost:5173",
-    "http://localhost:5174"
+    "http://localhost:5174",
+    "https://9937-182-74-172-122.ngrok-free.app"
   ]
 }));
 

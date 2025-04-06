@@ -1,11 +1,9 @@
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL + '/api/users';
+import axiosInstance from '../axiosInstance';
 
 // Get all users
 export const getAllUsers = async () => {
   try {
-    const response = await axios.get(API_URL);
+    const response = await axiosInstance.get(`/api/users`);
     return response.data;
   } catch (error) {
     throw error.response.data;
@@ -15,7 +13,7 @@ export const getAllUsers = async () => {
 // Get user by ID
 export const getUserById = async (id) => {
   try {
-    const response = await axios.get(`${API_URL}/${id}`);
+    const response = await axiosInstance.get(`/api/users/${id}`);
     return response.data;
   } catch (error) {
     throw error.response.data;
@@ -25,7 +23,7 @@ export const getUserById = async (id) => {
 // Create user
 export const createUser = async (userData) => {
   try {
-    const response = await axios.post(API_URL, userData);
+    const response = await axiosInstance.post('api/users', userData);
     return response.data;
   } catch (error) {
     throw error.response.data;
@@ -35,7 +33,7 @@ export const createUser = async (userData) => {
 // Update user
 export const updateUser = async (id, userData) => {
   try {
-    const response = await axios.put(`${API_URL}/${id}`, userData);
+    const response = await axiosInstance.put(`api/users/${id}`, userData);
     return response.data;
   } catch (error) {
     throw error.response.data;
@@ -45,7 +43,7 @@ export const updateUser = async (id, userData) => {
 // Delete user
 export const deleteUser = async (id) => {
   try {
-    const response = await axios.delete(`${API_URL}/${id}`);
+    const response = await axiosInstance.delete(`api/users/${id}`);
     return response.data;
   } catch (error) {
     throw error.response.data;

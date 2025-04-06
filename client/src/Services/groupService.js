@@ -1,11 +1,9 @@
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL;
+import axiosInstance from '../axiosInstance';
 
 // Get all groups
 export const getAllGroups = async () => {
   try {
-    const response = await axios.get(API_URL);
+    const response = await axiosInstance.get('api/groups');
     return response.data;
   } catch (error) {
     throw error.response.data;
@@ -15,7 +13,7 @@ export const getAllGroups = async () => {
 // Get group by ID
 export const getGroupById = async (id) => {
   try {
-    const response = await axios.get(`${API_URL}/${id}`);
+    const response = await axiosInstance.get(`api/groups/${id}`);
     return response.data;
   } catch (error) {
     throw error.response.data;
@@ -25,7 +23,7 @@ export const getGroupById = async (id) => {
 // Create group
 export const createGroup = async (groupData) => {
   try {
-    const response = await axios.post(API_URL, groupData);
+    const response = await axiosInstance.post('api/groups', groupData);
     return response.data;
   } catch (error) {
     throw error.response.data;
@@ -35,7 +33,7 @@ export const createGroup = async (groupData) => {
 // Update group
 export const updateGroup = async (id, groupData) => {
   try {
-    const response = await axios.put(`${API_URL}/${id}`, groupData);
+    const response = await axiosInstance.put(`api/groups/${id}`, groupData);
     return response.data;
   } catch (error) {
     throw error.response.data;
@@ -45,7 +43,7 @@ export const updateGroup = async (id, groupData) => {
 // Delete group
 export const deleteGroup = async (id) => {
   try {
-    const response = await axios.delete(`${API_URL}/${id}`);
+    const response = await axiosInstance.delete(`api/groups/${id}`);
     return response.data;
   } catch (error) {
     throw error.response.data;

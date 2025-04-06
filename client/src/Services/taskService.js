@@ -1,11 +1,9 @@
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL;
+import axiosInstance from '../axiosInstance';
 
 // Get all tasks
 export const getAllTasks = async () => {
   try {
-    const response = await axios.get(API_URL);
+    const response = await axiosInstance.get('/api/tasks');
     return response.data;
   } catch (error) {
     throw error.response.data;
@@ -15,7 +13,7 @@ export const getAllTasks = async () => {
 // Get task by ID
 export const getTaskById = async (id) => {
   try {
-    const response = await axios.get(`${API_URL}/${id}`);
+    const response = await axiosInstance.get(`/api/tasks/${id}`);
     return response.data;
   } catch (error) {
     throw error.response.data;
@@ -25,7 +23,7 @@ export const getTaskById = async (id) => {
 // Create task
 export const createTask = async (taskData) => {
   try {
-    const response = await axios.post(API_URL, taskData);
+    const response = await axiosInstance.post('/api/tasks', taskData);
     return response.data;
   } catch (error) {
     throw error.response.data;
@@ -35,7 +33,7 @@ export const createTask = async (taskData) => {
 // Update task
 export const updateTask = async (id, taskData) => {
   try {
-    const response = await axios.put(`${API_URL}/${id}`, taskData);
+    const response = await axiosInstance.put(`api/tasks/${id}`, taskData);
     return response.data;
   } catch (error) {
     throw error.response.data;
@@ -45,7 +43,7 @@ export const updateTask = async (id, taskData) => {
 // Delete task
 export const deleteTask = async (id) => {
   try {
-    const response = await axios.delete(`${API_URL}/${id}`);
+    const response = await axiosInstance.delete(`api/tasks/${id}`);
     return response.data;
   } catch (error) {
     throw error.response.data;

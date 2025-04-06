@@ -1,11 +1,9 @@
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL;
+import axiosInstance from '../axiosInstance';
 
 // Get all video calls
 export const getAllVideoCalls = async () => {
   try {
-    const response = await axios.get(API_URL);
+    const response = await axiosInstance.get('/api/video-calls');
     return response.data;
   } catch (error) {
     throw error.response.data;
@@ -15,7 +13,7 @@ export const getAllVideoCalls = async () => {
 // Get video call by ID
 export const getVideoCallById = async (id) => {
   try {
-    const response = await axios.get(`${API_URL}/${id}`);
+    const response = await axiosInstance.get(`/api/video-calls/${id}`);
     return response.data;
   } catch (error) {
     throw error.response.data;
@@ -25,7 +23,7 @@ export const getVideoCallById = async (id) => {
 // Create video call
 export const createVideoCall = async (videoCallData) => {
   try {
-    const response = await axios.post(API_URL, videoCallData);
+    const response = await axiosInstance.post('/api/video-calls', videoCallData);
     return response.data;
   } catch (error) {
     throw error.response.data;
@@ -35,7 +33,7 @@ export const createVideoCall = async (videoCallData) => {
 // Update video call
 export const updateVideoCall = async (id, videoCallData) => {
   try {
-    const response = await axios.put(`${API_URL}/${id}`, videoCallData);
+    const response = await axiosInstance.put(`api/video-calls/${id}`, videoCallData);
     return response.data;
   } catch (error) {
     throw error.response.data;
@@ -45,7 +43,7 @@ export const updateVideoCall = async (id, videoCallData) => {
 // Delete video call
 export const deleteVideoCall = async (id) => {
   try {
-    const response = await axios.delete(`${API_URL}/${id}`);
+    const response = await axiosInstance.delete(`api/video-calls/${id}`);
     return response.data;
   } catch (error) {
     throw error.response.data;

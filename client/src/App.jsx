@@ -9,7 +9,7 @@ import Dashboard from './Pages/Dashboard';
 import './App.css';
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
   
   useEffect(() => {
     // Check if user is authenticated
