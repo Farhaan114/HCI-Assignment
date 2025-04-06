@@ -32,6 +32,7 @@ const ChatDetail = () => {
   const audioRefRemote = useRef(null);
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
+  const socketRef = useRef(null); // New ref to keep socket instance consistent
 
   useEffect(() => {
     // Scroll to bottom of messages
@@ -45,11 +46,13 @@ const ChatDetail = () => {
       }
     });
     
-    // const socketInstance = io('http://localhost:3000'); // Connect to the server
+    // Save socket to state and ref
     setSocket(socketInstance);
+    socketRef.current = socketInstance;
 
     socketInstance.on('connect', () => {
       setConnectionStatus('Connected');
+      // Join room with both formats to ensure compatibility
       socketInstance.emit('join-room', { userId1: currentUserId, userId2: userId });
       const roomId = [currentUserId, userId].sort().join('-');
       socketInstance.emit('join-room', roomId);
@@ -69,30 +72,51 @@ const ChatDetail = () => {
     });
     
     socketInstance.on('offer', async (offer) => {
+      console.log("Received offer:", offer);
       const pc = createPeerConnection();
       setPeerConnection(pc);
     
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      setLocalStream(stream);
-      stream.getTracks().forEach(track => pc.addTrack(track, stream));
-      videoRefLocal.current.srcObject = stream;
-    
-      await pc.setRemoteDescription(new RTCSessionDescription(offer));
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-    
-      socket.emit('answer', answer);
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        setLocalStream(stream);
+        
+        // Make sure videoRefLocal.current exists before setting srcObject
+        if (videoRefLocal.current) {
+          videoRefLocal.current.srcObject = stream;
+        }
+        
+        stream.getTracks().forEach(track => pc.addTrack(track, stream));
+      
+        await pc.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+      
+        socketRef.current.emit('answer', answer);
+      } catch (err) {
+        console.error("Error handling offer:", err);
+        setError("Failed to setup media connection. Please check camera/mic permissions.");
+      }
     });
     
     socketInstance.on('answer', async (answer) => {
+      console.log("Received answer:", answer);
       if (peerConnection) {
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+        try {
+          await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+        } catch (err) {
+          console.error("Error setting remote description:", err);
+        }
       }
     });
     
     socketInstance.on('ice-candidate', async (candidate) => {
+      console.log("Received ICE candidate:", candidate);
       if (peerConnection) {
-        await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+        try {
+          await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (err) {
+          console.error("Error adding ICE candidate:", err);
+        }
       }
     });
 
@@ -106,18 +130,27 @@ const ChatDetail = () => {
   }, [currentUserId, userId]);
 
   const createPeerConnection = () => {
-    const pc = new RTCPeerConnection();
+    const pc = new RTCPeerConnection({
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' }
+      ]
+    });
   
     pc.onicecandidate = (event) => {
-      if (event.candidate) {
-        socket.emit('ice-candidate', event.candidate);
+      if (event.candidate && socketRef.current) {
+        console.log("Sending ICE candidate:", event.candidate);
+        socketRef.current.emit('ice-candidate', event.candidate);
       }
     };
   
     pc.ontrack = (event) => {
+      console.log("Got remote track:", event.streams[0]);
       setRemoteStream(event.streams[0]);
-      if (audioRefRemote.current) {
-        audioRefRemote.current.srcObject = remoteStream;
+      
+      // Safe check before setting srcObject
+      if (videoRefRemote.current) {
+        videoRefRemote.current.srcObject = event.streams[0];
       }
     };
   
@@ -125,17 +158,34 @@ const ChatDetail = () => {
   };
 
   const handleJoinCall = async () => {
-    const pc = createPeerConnection();
-    setPeerConnection(pc);
-  
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-    setLocalStream(stream);
-    stream.getTracks().forEach(track => pc.addTrack(track, stream));
-    videoRefLocal.current.srcObject = stream;
-  
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-    socket.emit('offer', offer);
+    try {
+      const pc = createPeerConnection();
+      setPeerConnection(pc);
+    
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      setLocalStream(stream);
+      
+      // Check if ref exists before setting srcObject
+      if (videoRefLocal.current) {
+        videoRefLocal.current.srcObject = stream;
+      }
+      
+      stream.getTracks().forEach(track => pc.addTrack(track, stream));
+    
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      
+      // Use the socketRef to ensure we have a valid socket
+      if (socketRef.current) {
+        console.log("Sending offer");
+        socketRef.current.emit('offer', offer);
+      } else {
+        console.error("Socket not available when trying to send offer");
+      }
+    } catch (err) {
+      console.error("Error in handleJoinCall:", err);
+      setError("Failed to setup media connection. Please check camera/mic permissions.");
+    }
   };
   
   useEffect(() => {
@@ -178,8 +228,8 @@ const ChatDetail = () => {
       
             
       // Send through socket
-      if (socket && connectionStatus === 'Connected') {
-        socket.emit('send-message', messageData);
+      if (socketRef.current && connectionStatus === 'Connected') {
+        socketRef.current.emit('send-message', messageData);
       }
       
       // Clear input
@@ -196,19 +246,25 @@ const ChatDetail = () => {
 
   const handleStartCall = () => {
     setIsCalling(true);
-    // Change from 'initiate-call' to 'start-video-call'
-    socket.emit('start-video-call', { userId1: currentUserId, userId2: userId });
-    handleJoinCall();
+    if (socketRef.current) {
+      socketRef.current.emit('start-video-call', { userId1: currentUserId, userId2: userId });
+      handleJoinCall();
+    } else {
+      setError("Connection error. Please refresh the page and try again.");
+    }
   };
 
   const handleAcceptCall = () => {
     setIncomingCall(false);
+    setIsCalling(true);
     handleJoinCall();
   };
 
   const handleDeclineCall = () => {
     setIncomingCall(false);
-    socket.emit('decline-call', { to: userId });
+    if (socketRef.current) {
+      socketRef.current.emit('decline-call', { to: userId });
+    }
   };
 
   const handleEndCall = () => {
@@ -221,7 +277,9 @@ const ChatDetail = () => {
       peerConnection.close();
       setPeerConnection(null);
     }
-    socket.emit('end-call', { to: userId });
+    if (socketRef.current) {
+      socketRef.current.emit('end-call', { to: userId });
+    }
   };
 
   const toggleStarred = () => {
@@ -366,7 +424,7 @@ const ChatDetail = () => {
                   <FaPaperclip />
                 </button>
                 <textarea 
-                  className="form-control text-white" 
+                  className="form-control" 
                   placeholder="Type a message..."
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
@@ -398,56 +456,30 @@ const ChatDetail = () => {
               <button className="btn btn-danger" onClick={handleEndCall}>End Call</button>
             </div>
             <div className="card-body">
-              {/* <div className="row">
-                <div className="col-md-8">
-                  <div className="bg-dark rounded" style={{ height: '400px' }}>
-                    <video 
-                      ref={videoRefRemote} 
-                      autoPlay 
-                      playsInline
-                      className="w-100 h-100"
-                    />
-                  </div>
-                </div>
-                <div className="col-md-4">
-                  <div className="bg-dark rounded" style={{ height: '200px' }}>
-                    <video 
-                      ref={videoRefLocal} 
-                      autoPlay 
-                      playsInline 
-                      muted
-                      className="w-100 h-100"
-                    />
-                  </div>
-                </div>
-              </div> */}
               <div className="video-call-section mt-2">
-                  {isCalling && (
-                    <div className="video-container d-flex justify-content-center gap-3">
-                      <video
-                        ref={videoRefLocal}
-                        autoPlay
-                        muted
-                        playsInline
-                        style={{ width: '45%', borderRadius: '10px', border: '1px solid #ccc' }}
-                      />
-                      <video
-                        ref={videoRefRemote}
-                        autoPlay
-                        playsInline
-                        style={{ width: '45%', borderRadius: '10px', border: '1px solid #ccc' }}
-                      />
-                    </div>
-                  )}
+                <div className="video-container d-flex justify-content-center gap-3">
+                  <video
+                    ref={videoRefLocal}
+                    autoPlay
+                    muted
+                    playsInline
+                    style={{ width: '45%', borderRadius: '10px', border: '1px solid #ccc' }}
+                  />
+                  <video
+                    ref={videoRefRemote}
+                    autoPlay
+                    playsInline
+                    style={{ width: '45%', borderRadius: '10px', border: '1px solid #ccc' }}
+                  />
                 </div>
-
+              </div>
               <audio ref={audioRefRemote} autoPlay />
             </div>
           </div>
         </div>
       )}
       
-      {incomingCall && (
+      {incomingCall && !isCalling && (
         <div className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" style={{ backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 1050 }}>
           <div className="card" style={{ width: '300px' }}>
             <div className="card-header">
