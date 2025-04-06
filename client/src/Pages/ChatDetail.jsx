@@ -40,6 +40,7 @@ const ChatDetail = () => {
 
   useEffect(() => {
     const socketInstance = io('https://f075-110-224-82-191.ngrok-free.app/');
+    // const socketInstance = io('http://localhost:3000'); // Connect to the server
     setSocket(socketInstance);
 
     socketInstance.on('connect', () => {
