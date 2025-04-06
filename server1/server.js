@@ -79,20 +79,23 @@ socket.on('accept-video-call', ({ userId1, userId2 }) => {
 });
 
 
-  // WebRTC signaling: offer
-  socket.on('offer', (offer) => {
-    socket.to(socket.roomId).emit('offer', offer);
-  });
+socket.on('offer', (offer) => {
+  console.log(`Received offer from ${socket.id}, forwarding to room ${socket.roomId}`);
+  // Log all clients in the room
+  const room = io.sockets.adapter.rooms.get(socket.roomId);
+  console.log(`Room ${socket.roomId} has ${room ? room.size : 0} clients`);
+  socket.to(socket.roomId).emit('offer', offer);
+});
 
-  // WebRTC signaling: answer
-  socket.on('answer', (answer) => {
-    socket.to(socket.roomId).emit('answer', answer);
-  });
+socket.on('answer', (answer) => {
+  console.log(`Received answer from ${socket.id}, forwarding to room ${socket.roomId}`);
+  socket.to(socket.roomId).emit('answer', answer);
+});
 
-  // WebRTC signaling: ICE candidates
-  socket.on('ice-candidate', (candidate) => {
-    socket.to(socket.roomId).emit('ice-candidate', candidate);
-  });
+socket.on('ice-candidate', (candidate) => {
+  console.log(`Received ICE candidate from ${socket.id}`);
+  socket.to(socket.roomId).emit('ice-candidate', candidate);
+});
 
   socket.on('disconnect', () => {
     console.log('A user disconnected:', socket.id);

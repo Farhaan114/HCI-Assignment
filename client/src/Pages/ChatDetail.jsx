@@ -133,7 +133,9 @@ const ChatDetail = () => {
     const pc = new RTCPeerConnection({
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
+        { urls: 'stun:stun1.l.google.com:19302' },
+        // Add more STUN/TURN servers for better connectivity
+        { urls: 'stun:stun2.l.google.com:19302' }
       ]
     });
   
@@ -144,18 +146,42 @@ const ChatDetail = () => {
       }
     };
   
+    // Enhanced ontrack handler with better logging
     pc.ontrack = (event) => {
       console.log("Got remote track:", event.streams[0]);
+      
+      // Save remote stream to state
       setRemoteStream(event.streams[0]);
       
-      // Safe check before setting srcObject
+      // Directly set the srcObject on the video element if ref exists
       if (videoRefRemote.current) {
+        console.log("Setting remote video source");
         videoRefRemote.current.srcObject = event.streams[0];
+      } else {
+        console.warn("Remote video ref not available yet");
       }
+    };
+  
+    // Add connection state change logging
+    pc.onconnectionstatechange = () => {
+      console.log("Connection state:", pc.connectionState);
+    };
+    
+    // Add ICE connection state change logging
+    pc.oniceconnectionstatechange = () => {
+      console.log("ICE connection state:", pc.iceConnectionState);
     };
   
     return pc;
   };
+  useEffect(() => {
+    if (videoRefRemote.current && remoteStream) {
+      console.log("Setting remote video from effect");
+      videoRefRemote.current.srcObject = remoteStream;
+      // Ensure video plays automatically
+      videoRefRemote.current.play().catch(err => console.error("Play error:", err));
+    }
+  }, [remoteStream, videoRefRemote.current]);
 
   const handleJoinCall = async () => {
     try {
@@ -319,6 +345,20 @@ const ChatDetail = () => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
+  // Add this function to help debug connection issues
+const checkConnectionStatus = () => {
+  if (peerConnection) {
+    console.log({
+      iceConnectionState: peerConnection.iceConnectionState,
+      connectionState: peerConnection.connectionState,
+      signalingState: peerConnection.signalingState,
+      remoteStreams: peerConnection.getReceivers().map(r => r.track.kind)
+    });
+    
+    // Call this when accepting/starting a call
+    setTimeout(checkConnectionStatus, 3000); // Check every 3 seconds
+  }
+};
 
   return (
     <div className="container-fluid h-100">
@@ -457,21 +497,29 @@ const ChatDetail = () => {
             </div>
             <div className="card-body">
               <div className="video-call-section mt-2">
-                <div className="video-container d-flex justify-content-center gap-3">
+              <div className="video-container d-flex justify-content-center gap-3">
+                <div style={{ position: 'relative', width: '45%' }}>
                   <video
                     ref={videoRefLocal}
                     autoPlay
                     muted
                     playsInline
-                    style={{ width: '45%', borderRadius: '10px', border: '1px solid #ccc' }}
+                    className="w-100"
+                    style={{ borderRadius: '10px', border: '1px solid #ccc' }}
                   />
+                  <span className="position-absolute bottom-0 left-0 bg-dark text-white p-1 rounded m-2">You</span>
+                </div>
+                <div style={{ position: 'relative', width: '45%' }}>
                   <video
                     ref={videoRefRemote}
                     autoPlay
                     playsInline
-                    style={{ width: '45%', borderRadius: '10px', border: '1px solid #ccc' }}
+                    className="w-100"
+                    style={{ borderRadius: '10px', border: '1px solid #ccc' }}
                   />
+                  <span className="position-absolute bottom-0 left-0 bg-dark text-white p-1 rounded m-2">{oppositeUsername}</span>
                 </div>
+              </div>
               </div>
               <audio ref={audioRefRemote} autoPlay />
             </div>
