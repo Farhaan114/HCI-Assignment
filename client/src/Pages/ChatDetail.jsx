@@ -39,7 +39,12 @@ const ChatDetail = () => {
   }, [messages]);
 
   useEffect(() => {
-    const socketInstance = io('https://f075-110-224-82-191.ngrok-free.app/');
+    const socketInstance = io('https://2fd1-182-74-172-122.ngrok-free.app', {
+      extraHeaders: {
+        'ngrok-skip-browser-warning': 'true'
+      }
+    });
+    
     // const socketInstance = io('http://localhost:3000'); // Connect to the server
     setSocket(socketInstance);
 
