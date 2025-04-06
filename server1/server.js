@@ -45,8 +45,15 @@ io.on('connection', (socket) => {
   console.log('A user connected:', socket.id);
 
   // Join a private room based on sorted user IDs
-  socket.on('join-room', ({ userId1, userId2 }) => {
-    const roomId = [userId1, userId2].sort().join('-');
+  socket.on('join-room', (data) => {
+    let roomId;
+    if (typeof data === 'string') {
+      roomId = data; // If it's already a roomId string
+    } else {
+      // If it's an object with userId1 and userId2
+      const { userId1, userId2 } = data;
+      roomId = [userId1, userId2].sort().join('-');
+    }
     socket.join(roomId);
     socket.roomId = roomId; // Save for later use
     console.log(`User ${socket.id} joined room: ${roomId}`);
@@ -54,7 +61,8 @@ io.on('connection', (socket) => {
 
   // Handle chat messages
   socket.on('send-message', (message) => {
-    const roomId = [message.userId1, message.userId2].sort().join('-');
+    // Use senderId and receiverId from message instead of userId1/userId2
+    const roomId = [message.senderId, message.receiverId].sort().join('-');
     io.to(roomId).emit('receive-message', message);
   });
 

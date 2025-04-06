@@ -135,7 +135,7 @@ const ChatDetail = () => {
   
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
-    socket.emit('offer', { offer, to: userId });
+    socket.emit('offer', offer);
   };
   
   useEffect(() => {
@@ -176,9 +176,7 @@ const ChatDetail = () => {
         timestamp: new Date().toISOString(),
       };
       
-      // Add message locally
-      setMessages((prevMessages) => [...prevMessages, messageData]);
-      
+            
       // Send through socket
       if (socket && connectionStatus === 'Connected') {
         socket.emit('send-message', messageData);
@@ -198,7 +196,8 @@ const ChatDetail = () => {
 
   const handleStartCall = () => {
     setIsCalling(true);
-    socket.emit('initiate-call', { to: userId, from: currentUserId });
+    // Change from 'initiate-call' to 'start-video-call'
+    socket.emit('start-video-call', { userId1: currentUserId, userId2: userId });
     handleJoinCall();
   };
 
@@ -271,6 +270,14 @@ const ChatDetail = () => {
             <div className="card-header bg-light">
               <div className="d-flex justify-content-between align-items-center">
                 <div className="d-flex align-items-center">
+                {incomingCall && (
+                    <div className="incoming-call-popup p-3 bg-light border rounded">
+                      <p>{oppositeUsername} is calling...</p>
+                      <button className="btn btn-success mr-2" onClick={handleAcceptCall}>Accept</button>
+                      <button className="btn btn-danger" onClick={handleDeclineCall}>Decline</button>
+                    </div>
+                  )}
+
                   <img 
                     src={`https://ui-avatars.com/api/?name=${oppositeUsername}&background=random`} 
                     className="rounded-circle mr-2" 
@@ -359,7 +366,7 @@ const ChatDetail = () => {
                   <FaPaperclip />
                 </button>
                 <textarea 
-                  className="form-control" 
+                  className="form-control text-white" 
                   placeholder="Type a message..."
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
@@ -391,7 +398,7 @@ const ChatDetail = () => {
               <button className="btn btn-danger" onClick={handleEndCall}>End Call</button>
             </div>
             <div className="card-body">
-              <div className="row">
+              {/* <div className="row">
                 <div className="col-md-8">
                   <div className="bg-dark rounded" style={{ height: '400px' }}>
                     <video 
@@ -413,7 +420,27 @@ const ChatDetail = () => {
                     />
                   </div>
                 </div>
-              </div>
+              </div> */}
+              <div className="video-call-section mt-2">
+                  {isCalling && (
+                    <div className="video-container d-flex justify-content-center gap-3">
+                      <video
+                        ref={videoRefLocal}
+                        autoPlay
+                        muted
+                        playsInline
+                        style={{ width: '45%', borderRadius: '10px', border: '1px solid #ccc' }}
+                      />
+                      <video
+                        ref={videoRefRemote}
+                        autoPlay
+                        playsInline
+                        style={{ width: '45%', borderRadius: '10px', border: '1px solid #ccc' }}
+                      />
+                    </div>
+                  )}
+                </div>
+
               <audio ref={audioRefRemote} autoPlay />
             </div>
           </div>
