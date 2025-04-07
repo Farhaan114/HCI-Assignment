@@ -26,13 +26,15 @@ const ChatDetail = () => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  
+  const [isCallInitiator, setIsCallInitiator] = useState(false);
+  const [needsUserInteraction, setNeedsUserInteraction] = useState(false);
+
   const videoRefLocal = useRef(null);
   const videoRefRemote = useRef(null);
-  const audioRefRemote = useRef(null);
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
-  const socketRef = useRef(null); // New ref to keep socket instance consistent
+  const socketRef = useRef(null);
+  const peerConnectionRef = useRef(null);
 
   useEffect(() => {
     // Scroll to bottom of messages
@@ -51,6 +53,7 @@ const ChatDetail = () => {
     socketRef.current = socketInstance;
 
     socketInstance.on('connect', () => {
+      console.log('Socket connected');
       setConnectionStatus('Connected');
       // Join room with both formats to ensure compatibility
       socketInstance.emit('join-room', { userId1: currentUserId, userId2: userId });
@@ -59,38 +62,54 @@ const ChatDetail = () => {
     });
 
     socketInstance.on('disconnect', () => {
+      console.log('Socket disconnected');
       setConnectionStatus('Disconnected');
     });
 
     socketInstance.on('receive-message', (message) => {
+      console.log('Received message:', message);
       setMessages((prevMessages) => [...prevMessages, message]);
     });
     
     socketInstance.on('incoming-call', ({ from }) => {
       console.log("Incoming call from", from);
       setIncomingCall(true);
+      setIsCallInitiator(false);
     });
     
     socketInstance.on('offer', async (offer) => {
       console.log("Received offer:", offer);
-      const pc = createPeerConnection();
-      setPeerConnection(pc);
-    
+      
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        setLocalStream(stream);
-        
-        // Make sure videoRefLocal.current exists before setting srcObject
-        if (videoRefLocal.current) {
-          videoRefLocal.current.srcObject = stream;
+        // Create peer connection if not already created
+        if (!peerConnectionRef.current) {
+          const pc = createPeerConnection();
+          peerConnectionRef.current = pc;
+          setPeerConnection(pc);
         }
         
-        stream.getTracks().forEach(track => pc.addTrack(track, stream));
-      
-        await pc.setRemoteDescription(new RTCSessionDescription(offer));
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-      
+        // Set remote description from the offer
+        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(offer));
+        
+        // If we don't have local stream yet, get it
+        if (!localStream) {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+          setLocalStream(stream);
+          
+          // Add tracks to peer connection
+          stream.getTracks().forEach(track => peerConnectionRef.current.addTrack(track, stream));
+          
+          // Set local video
+          if (videoRefLocal.current) {
+            videoRefLocal.current.srcObject = stream;
+          }
+        }
+        
+        // Create answer
+        const answer = await peerConnectionRef.current.createAnswer();
+        await peerConnectionRef.current.setLocalDescription(answer);
+        
+        // Send answer
         socketRef.current.emit('answer', answer);
       } catch (err) {
         console.error("Error handling offer:", err);
@@ -100,9 +119,10 @@ const ChatDetail = () => {
     
     socketInstance.on('answer', async (answer) => {
       console.log("Received answer:", answer);
-      if (peerConnection) {
+      if (peerConnectionRef.current) {
         try {
-          await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+          await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(answer));
+          console.log("Remote description set successfully");
         } catch (err) {
           console.error("Error setting remote description:", err);
         }
@@ -111,13 +131,21 @@ const ChatDetail = () => {
     
     socketInstance.on('ice-candidate', async (candidate) => {
       console.log("Received ICE candidate:", candidate);
-      if (peerConnection) {
+      if (peerConnectionRef.current) {
         try {
-          await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+          await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+          console.log("ICE candidate added successfully");
         } catch (err) {
           console.error("Error adding ICE candidate:", err);
         }
+      } else {
+        console.warn("Received ICE candidate but peer connection not ready");
       }
+    });
+    
+    socketInstance.on('end-call', () => {
+      console.log("Call ended by remote peer");
+      handleEndCall();
     });
 
     return () => {
@@ -126,15 +154,19 @@ const ChatDetail = () => {
       if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
       }
+      if (peerConnectionRef.current) {
+        peerConnectionRef.current.close();
+        peerConnectionRef.current = null;
+      }
     };
   }, [currentUserId, userId]);
 
   const createPeerConnection = () => {
+    console.log("Creating peer connection");
     const pc = new RTCPeerConnection({
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
-        // Add more STUN/TURN servers for better connectivity
         { urls: 'stun:stun2.l.google.com:19302' }
       ]
     });
@@ -146,89 +178,180 @@ const ChatDetail = () => {
       }
     };
   
-    // Enhanced ontrack handler with better logging
     pc.ontrack = (event) => {
       console.log("Got remote track:", event.streams[0]);
       
       // Save remote stream to state
       setRemoteStream(event.streams[0]);
       
-      // Directly set the srcObject on the video element if ref exists
+      // Set the remote video source
       if (videoRefRemote.current) {
-        console.log("Setting remote video source");
+        console.log("Setting remote video source directly from ontrack");
         videoRefRemote.current.srcObject = event.streams[0];
-      } else {
-        console.warn("Remote video ref not available yet");
       }
     };
   
-    // Add connection state change logging
     pc.onconnectionstatechange = () => {
       console.log("Connection state:", pc.connectionState);
     };
     
-    // Add ICE connection state change logging
     pc.oniceconnectionstatechange = () => {
       console.log("ICE connection state:", pc.iceConnectionState);
+      
+      // If the connection is failed or disconnected, try to restart it
+      if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
+        console.log("Attempting to restart ICE");
+        pc.restartIce();
+      }
     };
   
     return pc;
   };
+
   useEffect(() => {
+    // Set local video when localStream changes
+    if (videoRefLocal.current && localStream) {
+      videoRefLocal.current.srcObject = localStream;
+    }
+  }, [localStream]);
+
+  useEffect(() => {
+    // Set remote video when remoteStream changes
     if (videoRefRemote.current && remoteStream) {
-      console.log("Setting remote video from effect");
+      console.log("Setting remote video from remoteStream effect");
       videoRefRemote.current.srcObject = remoteStream;
-      // Ensure video plays automatically
-      // videoRefRemote.current.play().catch(err => console.error("Play error:", err));
+      
+      // Properly handle the play Promise
+      const playPromise = videoRefRemote.current.play();
+      
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            console.log("Remote video playing successfully");
+            // Video is playing, no action needed
+          })
+          .catch(err => {
+            console.warn("Auto-play failed:", err);
+            // Show UI indicator that user needs to interact
+            setNeedsUserInteraction(true);
+          });
+      }
     }
   }, [remoteStream]);
 
-  const handleJoinCall = async () => {
+  const handleStartCall = async () => {
     try {
-      // Create peer connection first
+      console.log("Starting call");
+      setIsCalling(true);
+      setIsCallInitiator(true);
+      
+      // Create peer connection
       const pc = createPeerConnection();
+      peerConnectionRef.current = pc;
       setPeerConnection(pc);
+      
+      // Get local stream
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      setLocalStream(stream);
+      
+      // Add tracks to peer connection
+      stream.getTracks().forEach(track => pc.addTrack(track, stream));
+      
+      // Start the calling process
+      socketRef.current.emit('start-video-call', { userId1: currentUserId, userId2: userId });
+      
+      // Create offer
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      
+      // Send offer
+      socketRef.current.emit('offer', offer);
+      
+      // Debug connection status
+      setTimeout(checkConnectionStatus, 1000);
+    } catch (err) {
+      console.error("Error starting call:", err);
+      setError("Failed to start call. Please check camera/mic permissions.");
+      setIsCalling(false);
+    }
+  };
+
+  const handleAcceptCall = async () => {
+    try {
+      console.log("Accepting call");
+      setIncomingCall(false);
+      setIsCalling(true);
+      setIsCallInitiator(false);
       
       // Get user media
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       setLocalStream(stream);
       
-      // Check if ref exists before setting srcObject
-      if (videoRefLocal.current) {
-        videoRefLocal.current.srcObject = stream;
-      } else {
-        console.warn("Local video ref not available");
-      }
+      // Peer connection will be created when offer is received
+      // We just notify the other user that we've accepted
+      socketRef.current.emit('accept-call', { from: currentUserId, to: userId });
       
-      // Add tracks to the peer connection
-      stream.getTracks().forEach(track => pc.addTrack(track, stream));
-      
-      // Create and send offer
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      
-      // Use the socketRef to ensure we have a valid socket
-      if (socketRef.current) {
-        console.log("Sending offer");
-        socketRef.current.emit('offer', offer);
-      } else {
-        console.error("Socket not available when trying to send offer");
-      }
-      
-      // Log connection state
-      console.log("ICE connection state:", pc.iceConnectionState);
-      console.log("Connection state:", pc.connectionState);
+      // Debug connection status
+      setTimeout(checkConnectionStatus, 1000);
     } catch (err) {
-      console.error("Error in handleJoinCall:", err);
-      setError("Failed to setup media connection. Please check camera/mic permissions.");
+      console.error("Error accepting call:", err);
+      setError("Failed to accept call. Please check camera/mic permissions.");
     }
   };
-  
-  useEffect(() => {
-    if (videoRefRemote.current && remoteStream) {
-      videoRefRemote.current.srcObject = remoteStream;
+
+  const handleDeclineCall = () => {
+    setIncomingCall(false);
+    if (socketRef.current) {
+      socketRef.current.emit('decline-call', { to: userId });
     }
-  }, [remoteStream]);
+  };
+
+  const handleEndCall = () => {
+    console.log("Ending call");
+    setIsCalling(false);
+    
+    // Stop local stream
+    if (localStream) {
+      localStream.getTracks().forEach(track => track.stop());
+      setLocalStream(null);
+    }
+    
+    // Close peer connection
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.close();
+      peerConnectionRef.current = null;
+    }
+    
+    // Reset video elements
+    if (videoRefLocal.current) {
+      videoRefLocal.current.srcObject = null;
+    }
+    if (videoRefRemote.current) {
+      videoRefRemote.current.srcObject = null;
+    }
+    
+    // Notify other user
+    if (socketRef.current) {
+      socketRef.current.emit('end-call', { to: userId });
+    }
+  };
+
+  const checkConnectionStatus = () => {
+    if (peerConnectionRef.current) {
+      console.log("Connection status check:", {
+        iceConnectionState: peerConnectionRef.current.iceConnectionState,
+        connectionState: peerConnectionRef.current.connectionState,
+        signalingState: peerConnectionRef.current.signalingState,
+        hasRemoteDescription: !!peerConnectionRef.current.remoteDescription,
+        remoteStream: remoteStream ? "exists" : "null"
+      });
+      
+      // Continue checking while in call
+      if (isCalling) {
+        setTimeout(checkConnectionStatus, 3000);
+      }
+    }
+  };
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -262,10 +385,12 @@ const ChatDetail = () => {
         timestamp: new Date().toISOString(),
       };
       
-            
       // Send through socket
       if (socketRef.current && connectionStatus === 'Connected') {
         socketRef.current.emit('send-message', messageData);
+        
+        // Add to local messages list
+        setMessages((prevMessages) => [...prevMessages, messageData]);
       }
       
       // Clear input
@@ -277,46 +402,6 @@ const ChatDetail = () => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
-    }
-  };
-
-  const handleStartCall = () => {
-    setIsCalling(true);
-    if (socketRef.current) {
-      socketRef.current.emit('start-video-call', { userId1: currentUserId, userId2: userId });
-      handleJoinCall();
-    } else {
-      setError("Connection error. Please refresh the page and try again.");
-    }
-  };
-
-  const handleAcceptCall = () => {
-    setIncomingCall(false);
-    setIsCalling(true);
-    setTimeout(() => {
-      handleJoinCall();
-    }, 100);
-  };
-
-  const handleDeclineCall = () => {
-    setIncomingCall(false);
-    if (socketRef.current) {
-      socketRef.current.emit('decline-call', { to: userId });
-    }
-  };
-
-  const handleEndCall = () => {
-    setIsCalling(false);
-    if (localStream) {
-      localStream.getTracks().forEach(track => track.stop());
-      setLocalStream(null);
-    }
-    if (peerConnection) {
-      peerConnection.close();
-      setPeerConnection(null);
-    }
-    if (socketRef.current) {
-      socketRef.current.emit('end-call', { to: userId });
     }
   };
 
@@ -357,42 +442,6 @@ const ChatDetail = () => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
-  // Add this function to help debug connection issues
-const checkConnectionStatus = () => {
-  if (peerConnection) {
-    console.log({
-      iceConnectionState: peerConnection.iceConnectionState,
-      connectionState: peerConnection.connectionState,
-      signalingState: peerConnection.signalingState,
-      remoteStreams: peerConnection.getReceivers().map(r => r.track.kind)
-    });
-    
-    // Call this when accepting/starting a call
-    setTimeout(checkConnectionStatus, 3000); // Check every 3 seconds
-  }
-};
-
-useEffect(() => {
-  // Only run this effect when remoteStream changes and exists
-  if (remoteStream) {
-    console.log("Remote stream available, attempting to attach to video element");
-    
-    // Function to attach stream to video element
-    const attachStreamToVideo = () => {
-      if (videoRefRemote.current) {
-        console.log("Attaching remote stream to video element");
-        videoRefRemote.current.srcObject = remoteStream;
-        // Don't call play() directly - let autoPlay handle it
-      } else {
-        console.log("Video ref still not available, retrying in 100ms");
-        // Try again in a short while
-        setTimeout(attachStreamToVideo, 100);
-      }
-    };
-    
-    attachStreamToVideo();
-  }
-}, [remoteStream]);
 
   return (
     <div className="container-fluid h-100">
@@ -402,14 +451,6 @@ useEffect(() => {
             <div className="card-header bg-light">
               <div className="d-flex justify-content-between align-items-center">
                 <div className="d-flex align-items-center">
-                {incomingCall && (
-                    <div className="incoming-call-popup p-3 bg-light border rounded">
-                      <p>{oppositeUsername} is calling...</p>
-                      <button className="btn btn-success mr-2" onClick={handleAcceptCall}>Accept</button>
-                      <button className="btn btn-danger" onClick={handleDeclineCall}>Decline</button>
-                    </div>
-                  )}
-
                   <img 
                     src={`https://ui-avatars.com/api/?name=${oppositeUsername}&background=random`} 
                     className="rounded-circle mr-2" 
@@ -521,49 +562,67 @@ useEffect(() => {
         </div>
       </div>
       
-      {/* Video call modals */}
-      // Update your video call modal code
-{isCalling && (
-  <div className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" 
-       style={{ backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 1050 }}>
-    <div className="card" style={{ width: '80%', maxWidth: '800px' }}>
-      <div className="card-header d-flex justify-content-between align-items-center">
-        <h5 className="mb-0">Call with {oppositeUsername}</h5>
-        <button className="btn btn-danger" onClick={handleEndCall}>End Call</button>
-      </div>
-      <div className="card-body">
-        <div className="video-call-section mt-2">
-          <div className="video-container d-flex justify-content-center gap-3">
-            <div style={{ position: 'relative', width: '45%' }}>
-              <video
-                ref={videoRefLocal}
-                autoPlay
-                muted
-                playsInline
-                className="w-100 h-auto"
-                style={{ borderRadius: '10px', border: '1px solid #ccc', backgroundColor: '#f0f0f0' }}
-              />
-              <p className="position-absolute bottom-0 start-0 bg-dark text-white p-1 m-2 rounded">You</p>
+      {/* Video call modal */}
+      {isCalling && (
+        <div className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" 
+             style={{ backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 1050 }}>
+          <div className="card" style={{ width: '80%', maxWidth: '800px' }}>
+            <div className="card-header d-flex justify-content-between align-items-center">
+              <h5 className="mb-0">Call with {oppositeUsername}</h5>
+              <button className="btn btn-danger" onClick={handleEndCall}>End Call</button>
             </div>
-            <div style={{ position: 'relative', width: '45%' }}>
-              <video
-                ref={videoRefRemote}
-                autoPlay
-                playsInline
-                className="w-100 h-auto"
-                style={{ borderRadius: '10px', border: '1px solid #ccc', backgroundColor: '#f0f0f0' }}
-              />
-              <p className="position-absolute bottom-0 start-0 bg-dark text-white p-1 m-2 rounded">{oppositeUsername}</p>
+            <div className="card-body p-3">
+              <div className="video-call-section">
+                <div className="video-container d-flex justify-content-center gap-3">
+                  <div style={{ position: 'relative', width: '45%' }}>
+                    <video
+                      ref={videoRefLocal}
+                      autoPlay
+                      playsInline
+                      className="w-100 h-auto"
+                      style={{ borderRadius: '10px', border: '1px solid #ccc', backgroundColor: '#f0f0f0' }}
+                    />
+                    <p className="position-absolute bottom-0 start-0 bg-dark text-white p-1 m-2 rounded">You</p>
+                  </div>
+                  <div style={{ position: 'relative', width: '45%' }}>
+                    <video
+                      ref={videoRefRemote}
+                      autoPlay
+                      playsInline
+                      className="w-100 h-auto"
+                      style={{ borderRadius: '10px', border: '1px solid #ccc', backgroundColor: '#f0f0f0' }}
+                    />
+                    <p className="position-absolute bottom-0 start-0 bg-dark text-white p-1 m-2 rounded">{oppositeUsername}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-3 text-center">
+                <p>Connection status: {peerConnection?.iceConnectionState || 'Not connected'}</p>
+                {(!remoteStream && isCalling) && <p>Waiting for remote stream...</p>}
+              </div>
+              {needsUserInteraction && remoteStream && (
+              <div className="text-center mt-2">
+                <button 
+                  className="btn btn-primary btn-sm"
+                  onClick={() => {
+                    videoRefRemote.current.play()
+                      .then(() => setNeedsUserInteraction(false))
+                      .catch(err => console.error("Manual play failed:", err));
+                  }}
+                >
+                  Click to start remote video
+                </button>
+              </div>
+            )}
             </div>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
-)}
+      )}
       
+      {/* Incoming call modal */}
       {incomingCall && !isCalling && (
-        <div className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" style={{ backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 1050 }}>
+        <div className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center" 
+             style={{ backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 1050 }}>
           <div className="card" style={{ width: '300px' }}>
             <div className="card-header">
               <h5 className="mb-0">Incoming Call</h5>
@@ -579,9 +638,9 @@ useEffect(() => {
         </div>
       )}
       
+      {/* Emoji picker */}
       {showEmojiPicker && (
         <div className="position-absolute bottom-100 start-0 mb-2">
-          {/* Emoji picker would go here - using a placeholder */}
           <div className="bg-white p-2 rounded shadow">
             <div className="d-flex flex-wrap" style={{ maxWidth: '200px' }}>
               {['😀', '😂', '🙂', '😍', '😎', '👍', '❤️', '😢', '🎉'].map(emoji => (

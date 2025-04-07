@@ -25,7 +25,7 @@ function App() {
 
   return (
     <Router>
-      <div className="app-container">
+      <div className="">
         <Navbar isAuthenticated={isAuthenticated} setIsAuthenticated={setIsAuthenticated} />
         <div className="main-content">
           <Routes>
