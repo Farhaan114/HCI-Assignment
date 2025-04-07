@@ -7,6 +7,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import { FaVideo, FaRegStar, FaStar, FaEllipsisV, FaPaperclip, FaMicrophone, FaRegSmile, FaSearch, FaBell } from 'react-icons/fa';
 import { IoMdSend } from 'react-icons/io';
 
+
 const ChatDetail = () => {
   const { userId } = useParams();
   const currentUserId = localStorage.getItem('userId');
@@ -216,7 +217,6 @@ const ChatDetail = () => {
   }, [localStream]);
 
   useEffect(() => {
-    // Set remote video when remoteStream changes
     if (videoRefRemote.current && remoteStream) {
       console.log("Setting remote video from remoteStream effect");
       videoRefRemote.current.srcObject = remoteStream;
@@ -376,6 +376,31 @@ const ChatDetail = () => {
     fetchOppositeUsername();
   }, [currentUserId, userId]);
 
+  useEffect(() => {
+    // Load dummy chat history data
+    const dummyMessages = [
+      {
+        senderId: currentUserId,
+        receiverId: userId,
+        content: 'Hello! How are you?',
+        timestamp: new Date().toISOString(),
+      },
+      {
+        senderId: userId,
+        receiverId: currentUserId,
+        content: 'I am good, thank you! How about you?',
+        timestamp: new Date().toISOString(),
+      },
+      {
+        senderId: currentUserId,
+        receiverId: userId,
+        content: 'I am doing well, just working on some projects.',
+        timestamp: new Date().toISOString(),
+      },
+    ];
+    setMessages(dummyMessages);
+  }, [currentUserId, userId]);
+
   const handleSendMessage = () => {
     if (newMessage.trim() !== '') {
       const messageData = {
@@ -390,7 +415,7 @@ const ChatDetail = () => {
         socketRef.current.emit('send-message', messageData);
         
         // Add to local messages list
-        setMessages((prevMessages) => [...prevMessages, messageData]);
+        // setMessages((prevMessages) => [...prevMessages, messageData]);
       }
       
       // Clear input
