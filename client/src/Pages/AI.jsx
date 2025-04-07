@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import './App.css';
-import ChatWindow from '../../../client/src/Pages/components/ChatWindow/ChatWindow';
-import ChatHistory from '../../../client/src/Pages/components/ChatHistory/ChatHistory';
-import MessageInput from '../../../client/src/Pages/components/MessageInput/MessageInput';
+import "./AI.css";
+import ChatWindow from './components/ChatWindow/ChatWindow';
+import ChatHistory from './components/ChatHistory/ChatHistory';
+import MessageInput from './components/MessageInput/MessageInput';
 
-function App() {
+function AI() {
   const [model, setModel] = useState('llama2');
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
@@ -281,4 +281,4 @@ function App() {
   );
 }
 
-export default App;
+export default AI;
