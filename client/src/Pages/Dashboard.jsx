@@ -13,17 +13,13 @@ const Dashboard = () => {
       { month: 'Jan', completion: 78, efficiency: 82 },
       { month: 'Feb', completion: 75, efficiency: 77 },
       { month: 'Mar', completion: 83, efficiency: 81 },
-      { month: 'Apr', completion: 87, efficiency: 85 },
-      { month: 'May', completion: 92, efficiency: 88 },
-      { month: 'Jun', completion: 90, efficiency: 91 }
+      { month: 'Apr', completion: 87, efficiency: 85 }
     ],
     completedWork: [
       { month: 'Jan', Bugs: 15, Features: 10, Documents: 5 },
       { month: 'Feb', Bugs: 12, Features: 18, Documents: 7 },
       { month: 'Mar', Bugs: 8, Features: 22, Documents: 9 },
-      { month: 'Apr', Bugs: 10, Features: 15, Documents: 12 },
-      { month: 'May', Bugs: 5, Features: 18, Documents: 14 },
-      { month: 'Jun', Bugs: 7, Features: 20, Documents: 11 }
+      { month: 'Apr', Bugs: 10, Features: 15, Documents: 12 }
     ]
   });
 
@@ -82,13 +78,13 @@ const Dashboard = () => {
   return (
     <div className="container-fluid p-0" style={{ color: 'white', backgroundColor: '#121212' }}>
       {/* Only one header - this matches the chat app header in the screenshot */}
-      <div className="d-flex justify-content-between align-items-center py-2 px-4" style={{ backgroundColor: '#1e1e2d', borderBottom: '1px solid #2d2d3d' }}>
+      {/* <div className="d-flex justify-content-between align-items-center py-2 px-4" style={{ backgroundColor: '#1e1e2d', borderBottom: '1px solid #2d2d3d' }}>
         <h3 style={{ color: '#00f7ff', margin: 0 }}>Chat App</h3>
         <div className="d-flex align-items-center">
           <span className="me-3">saran@gmail.com</span>
           <button className="btn" style={{ backgroundColor: '#ff2d6d', color: 'white', borderRadius: '4px', padding: '6px 16px' }}>LOGOUT</button>
         </div>
-      </div>
+      </div> */}
       
       <div className="container mt-4">
         <h2 className="text-center my-4" style={{ color: '#00f7ff', textShadow: '0 0 10px rgba(0, 247, 255, 0.7)' }}>

@@ -18,7 +18,7 @@ const Login = () => {
       localStorage.setItem('token', response.token);
       localStorage.setItem('username', email);
       localStorage.setItem('userId', response.userId);
-      navigate('/chats');
+      navigate('/dashboard');
 
     } catch (err) {
       setError(err);

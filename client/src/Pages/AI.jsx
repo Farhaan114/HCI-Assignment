@@ -217,67 +217,107 @@ function AI() {
   };
 
   return (
-    <div className="app">
-      <div className="app-container">
-        <aside className="sidebar">
-          <div className="sidebar-header">
-            <h1>Chat Bot</h1>
-            <button onClick={createNewChat} className="new-chat-btn">
-              New Chat
-            </button>
+    <section id="hero" className="scale">
+      <div className="container">
+        {/* Header with Title */}
+        <div className="d-flex align-items-center justify-content-center pt-3">
+          <h4 className="title">AI Chat Assistant</h4>
+        </div>
+
+        <div className="row">
+          {/* Left Column - Chat History (col-3) */}
+          <div className="col-md-3">
+            <div className="chat-container sidebar-container">
+              <div className="sidebar">
+                <div className="top-icons">
+                  <h4>Chat History</h4>
+                  <button className="new-chat-btn" onClick={createNewChat}>
+                    <span>New Chat</span>
+                  </button>
+                </div>
+                <div className="chat-history">
+                  {chatHistory.map((chat) => (
+                    <div
+                      key={chat.id}
+                      className={`chat-item ${chat.id === activeChatId ? 'active' : ''}`}
+                      onClick={() => setActiveChatId(chat.id)}
+                    >
+                      <div className="d-flex justify-content-between align-items-center">
+                        <span className="chat-title">
+                          {chat.title || "New Chat"}
+                        </span>
+                        <button 
+                          className="delete-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteChat(chat.id);
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                      <div className="chat-preview">
+                        {chat.messages[chat.messages.length - 1]?.content.substring(0, 50) + '...'}
+                      </div>
+                      <div className="timestamp">
+                        {new Date(chat.timestamp).toLocaleString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
-          <ChatHistory
-            chats={chatHistory}
-            activeChat={getCurrentChat()}
-            onSelectChat={(chat) => setActiveChatId(chat.id)}
-            onDeleteChat={deleteChat}
-            sentimentAnalysis={sentimentAnalysis}
-          />
-        </aside>
 
-        <main className="main-content">
-          <div className="top-bar">
-            <div className="model-selector">
-              <label htmlFor="model">Model:</label>
-              <select 
-                id="model"
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-              >
-                {availableModels.map(model => (
-                  <option key={model.id} value={model.id}>{model.name}</option>
-                ))}
-              </select>
-            </div>
-            <div className={`status-indicator ${backendStatus}`}>
-              {backendStatus === 'connected' ? 'Connected' : 'Disconnected'}
+          {/* Right Column - Chat Window (col-9) */}
+          <div className="col-md-9">
+            <div className="chat-container main-content-container">
+              <div className="main-content" style={{ width: '100%' }}>
+                <div className="top-bar">
+                  <div className="model-selector">
+                    <label htmlFor="model">Model:</label>
+                    <select 
+                      id="model"
+                      value={model}
+                      onChange={(e) => setModel(e.target.value)}
+                    >
+                      {availableModels.map(model => (
+                        <option key={model.id} value={model.id}>{model.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className={`status-indicator ${backendStatus}`}>
+                    {backendStatus === 'connected' ? 'Connected' : 'Disconnected'}
+                  </div>
+                </div>
+
+                {backendStatus === 'disconnected' && (
+                  <div className="error-banner">
+                    Cannot connect to the backend server. Make sure it's running on http://localhost:8000
+                  </div>
+                )}
+
+                <ChatWindow
+                  currentChat={getCurrentChat()}
+                  loading={loading}
+                  error={error}
+                  generateSummary={generateSummary}
+                  summary={activeChatId ? summaries[activeChatId] : null}
+                />
+
+                <MessageInput
+                  prompt={prompt}
+                  setPrompt={setPrompt}
+                  onSubmit={handleSubmit}
+                  loading={loading}
+                  disabled={backendStatus !== 'connected'}
+                />
+              </div>
             </div>
           </div>
-
-          {backendStatus === 'disconnected' && (
-            <div className="error-banner">
-              Cannot connect to the backend server. Make sure it's running on http://localhost:8000
-            </div>
-          )}
-
-          <ChatWindow
-            currentChat={getCurrentChat()}
-            loading={loading}
-            error={error}
-            generateSummary={generateSummary}
-            summary={activeChatId ? summaries[activeChatId] : null}
-          />
-
-          <MessageInput
-            prompt={prompt}
-            setPrompt={setPrompt}
-            onSubmit={handleSubmit}
-            loading={loading}
-            disabled={backendStatus !== 'connected'}
-          />
-        </main>
+        </div>
       </div>
-    </div>
+    </section>
   );
 }
 

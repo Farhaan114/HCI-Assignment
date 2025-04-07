@@ -10,7 +10,10 @@ const MessageInput = ({ prompt, setPrompt, onSubmit, loading, disabled }) => {
   };
 
   return (
-    <form onSubmit={onSubmit} className="message-input">
+    <form onSubmit={(e) => {
+      e.preventDefault();
+      onSubmit();
+    }} className="message-input">
       <textarea
         value={prompt}
         onChange={(e) => setPrompt(e.target.value)}
@@ -22,7 +25,7 @@ const MessageInput = ({ prompt, setPrompt, onSubmit, loading, disabled }) => {
         type="submit" 
         disabled={loading || !prompt.trim() || disabled}
       >
-        {loading ? 'Processing...' : 'Send'}
+        <span>{loading ? 'Processing...' : 'Send'}</span>
       </button>
     </form>
   );

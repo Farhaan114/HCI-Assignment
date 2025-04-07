@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import 'bootstrap-icons/font/bootstrap-icons.css';
+import './Tasks.css';
+// import 'bootstrap-icons/font/bootstrap-icons.css';
 
 const Tasks = () => {
   const navigate = useNavigate();
@@ -109,122 +110,139 @@ const Tasks = () => {
   });
 
   return (
-    <div className="vh-100 vw-100 bg-dark d-flex">
-      {/* Left Sidebar */}
-      <div className="col-3 border-end border-neon p-3">
-        <div className="d-flex flex-column h-100">
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <h4 className="text-light mb-0">Tasks</h4>
-            <button 
-              className="btn btn-sm btn-neon"
-              onClick={() => navigate('/chat')}
-            >
-              <i className="bi bi-chat me-1"></i>
-              Chat
-            </button>
-          </div>
-
-          {/* Task Stats */}
-          <div className="mb-4">
-            <div className="d-flex justify-content-between mb-2">
-              <span className="text-light">Pending Tasks</span>
-              <span className="text-neon">{tasks.filter(t => t.status === 'pending').length}</span>
-            </div>
-            <div className="d-flex justify-content-between mb-2">
-              <span className="text-light">High Priority</span>
-              <span className="text-danger">{tasks.filter(t => t.priority === 'high' && t.status === 'pending').length}</span>
-            </div>
-            <div className="d-flex justify-content-between">
-              <span className="text-light">Completed Today</span>
-              <span className="text-success">{tasks.filter(t => t.status === 'completed').length}</span>
-            </div>
-          </div>
-
-          {/* Navigation Tabs */}
-          <div className="nav flex-column nav-pills">
-            <button
-              className={`nav-link text-start mb-2 ${activeTab === 'pending' ? 'active bg-neon text-dark' : 'text-light'}`}
-              onClick={() => setActiveTab('pending')}
-            >
-              <i className="bi bi-list-check me-2"></i>
-              Pending Tasks
-            </button>
-            <button
-              className={`nav-link text-start mb-2 ${activeTab === 'high-priority' ? 'active bg-neon text-dark' : 'text-light'}`}
-              onClick={() => setActiveTab('high-priority')}
-            >
-              <i className="bi bi-exclamation-triangle me-2"></i>
-              High Priority
-            </button>
-            <button
-              className={`nav-link text-start mb-2 ${activeTab === 'completed' ? 'active bg-neon text-dark' : 'text-light'}`}
-              onClick={() => setActiveTab('completed')}
-            >
-              <i className="bi bi-check-circle me-2"></i>
-              Completed
-            </button>
-          </div>
-
-          {/* Add Task Button */}
-          <button
-            className="btn btn-neon mt-auto"
-            onClick={() => setShowAddTask(true)}
-          >
-            <i className="bi bi-plus-lg me-2"></i>
-            Add New Task
-          </button>
+    <section id="hero" className="scale">
+      <div className="container">
+        {/* Header with Title */}
+        <div className="d-flex align-items-center justify-content-center pt-3">
+          <h4 className="title">Task Manager</h4>
         </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="col-9 p-3">
-        <div className="d-flex flex-column h-100">
-          {/* Task List */}
-          <div className="flex-grow-1 overflow-auto">
-            {filteredTasks.map(task => (
-              <div key={task.id} className="card bg-dark text-light mb-3 border-neon">
-                <div className="card-body">
-                  <div className="d-flex justify-content-between align-items-start">
-                    <div>
-                      <h5 className="card-title mb-1">
-                        <i className={`bi ${getCategoryIcon(task.category)} me-2`}></i>
-                        {task.title}
-                      </h5>
-                      <p className="card-text text-muted mb-2">{task.description}</p>
-                      <div className="d-flex align-items-center">
-                        <span className={`badge bg-${getPriorityColor(task.priority)} me-2`}>
-                          {task.priority} priority
-                        </span>
-                        <small className="text-muted me-2">
-                          <i className="bi bi-calendar me-1"></i>
-                          Due: {task.dueDate}
-                        </small>
-                      </div>
+        <div className="row">
+          {/* Left Column - Chat History (col-3) */}
+          <div className="col-md-3">
+            <div className="chat-container sidebar-container">
+              <div className="sidebar">
+                <div className="sidebar-content">
+                  <div className="top-icons">
+                    <h4>Tasks Overview</h4>
+                    <button 
+                      className="btn btn-neon mt-3"
+                      onClick={() => navigate('/ai')}
+                    >
+                      <span>Chat Assistant</span>
+                    </button>
+                  </div>
+
+                  {/* Task Stats */}
+                  <div className="stats-container">
+                    <div className="stat-item">
+                      <span className="stat-label">Pending Tasks</span>
+                      <span className="stat-value neon-cyan">
+                        {tasks.filter(t => t.status === 'pending').length}
+                      </span>
                     </div>
-                    <div className="d-flex gap-2">
-                      {task.status === 'pending' ? (
-                        <button
-                          className="btn btn-sm btn-success"
-                          onClick={() => handleStatusChange(task.id, 'completed')}
-                        >
-                          <i className="bi bi-check-lg"></i>
-                        </button>
-                      ) : (
-                        <button
-                          className="btn btn-sm btn-secondary"
-                          onClick={() => handleStatusChange(task.id, 'pending')}
-                        >
-                          <i className="bi bi-arrow-counterclockwise"></i>
-                        </button>
-                      )}
-                      <button className="btn btn-sm btn-outline-neon">
-                        <i className="bi bi-pencil"></i>
-                      </button>
+                    <div className="stat-item">
+                      <span className="stat-label">High Priority</span>
+                      <span className="stat-value neon-red">
+                        {tasks.filter(t => t.priority === 'high' && t.status === 'pending').length}
+                      </span>
+                    </div>
+                    <div className="stat-item">
+                      <span className="stat-label">Completed Today</span>
+                      <span className="stat-value neon-green">
+                        {tasks.filter(t => t.status === 'completed').length}
+                      </span>
                     </div>
                   </div>
+
+                  {/* Navigation Tabs */}
+                  <div className="nav-tabs-container">
+                    <button
+                      className={`nav-tab ${activeTab === 'pending' ? 'active' : ''}`}
+                      onClick={() => setActiveTab('pending')}
+                    >
+                      <i className="bi bi-list-check me-2"></i>
+                      Pending Tasks
+                    </button>
+                    <button
+                      className={`nav-tab ${activeTab === 'high-priority' ? 'active' : ''}`}
+                      onClick={() => setActiveTab('high-priority')}
+                    >
+                      <i className="bi bi-exclamation-triangle me-2"></i>
+                      High Priority
+                    </button>
+                    <button
+                      className={`nav-tab ${activeTab === 'completed' ? 'active' : ''}`}
+                      onClick={() => setActiveTab('completed')}
+                    >
+                      <i className="bi bi-check-circle me-2"></i>
+                      Completed
+                    </button>
+                  </div>
+                </div>
+
+                {/* Add Task Button - Fixed at bottom */}
+                <button
+                  className="new-task-btn"
+                  onClick={() => setShowAddTask(true)}
+                >
+                  <span>Add New Task</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Content */}
+          <div className="col-md-9">
+            <div className="chat-container main-content-container">
+              <div className="main-content">
+                {/* Task List */}
+                <div className="task-list">
+                  {filteredTasks.map(task => (
+                    <div key={task.id} className="task-card">
+                      <div className="task-content">
+                        <div className="task-header">
+                          <h5 className="task-title">
+                            <i className={`bi ${getCategoryIcon(task.category)} me-2`}></i>
+                            {task.title}
+                          </h5>
+                          <div className="task-actions">
+                            {task.status === 'pending' ? (
+                              <button
+                                className="action-btn complete-btn"
+                                onClick={() => handleStatusChange(task.id, 'completed')}
+                              >
+                                <i className="bi bi-check-lg"></i>
+                              </button>
+                            ) : (
+                              <button
+                                className="action-btn undo-btn"
+                                onClick={() => handleStatusChange(task.id, 'pending')}
+                              >
+                                <i className="bi bi-arrow-counterclockwise"></i>
+                              </button>
+                            )}
+                            <button className="action-btn edit-btn">
+                              <i className="bi bi-pencil"></i>
+                            </button>
+                          </div>
+                        </div>
+                        <p className="task-description">{task.description}</p>
+                        <div className="task-meta">
+                          <span className={`priority-badge ${task.priority}`}>
+                            {task.priority} priority
+                          </span>
+                          <span className="due-date">
+                            <i className="bi bi-calendar me-1"></i>
+                            Due: {task.dueDate}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            ))}
+            </div>
           </div>
         </div>
       </div>
@@ -233,8 +251,8 @@ const Tasks = () => {
       {showAddTask && (
         <div className="modal show d-block" tabIndex="-1">
           <div className="modal-dialog">
-            <div className="modal-content bg-dark text-light border-neon">
-              <div className="modal-header border-neon">
+            <div className="modal-content neon-modal">
+              <div className="modal-header">
                 <h5 className="modal-title">Add New Task</h5>
                 <button
                   type="button"
@@ -248,7 +266,7 @@ const Tasks = () => {
                     <label className="form-label">Title</label>
                     <input
                       type="text"
-                      className="form-control bg-dark text-light border-neon"
+                      className="form-control neon-input"
                       value={newTask.title}
                       onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
                       required
@@ -257,7 +275,7 @@ const Tasks = () => {
                   <div className="mb-3">
                     <label className="form-label">Description</label>
                     <textarea
-                      className="form-control bg-dark text-light border-neon"
+                      className="form-control neon-input"
                       value={newTask.description}
                       onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
                       rows="3"
@@ -267,7 +285,7 @@ const Tasks = () => {
                     <div className="col-md-6 mb-3">
                       <label className="form-label">Priority</label>
                       <select
-                        className="form-select bg-dark text-light border-neon"
+                        className="form-select neon-input"
                         value={newTask.priority}
                         onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
                       >
@@ -280,7 +298,7 @@ const Tasks = () => {
                       <label className="form-label">Due Date</label>
                       <input
                         type="date"
-                        className="form-control bg-dark text-light border-neon"
+                        className="form-control neon-input"
                         value={newTask.dueDate}
                         onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
                         required
@@ -290,7 +308,7 @@ const Tasks = () => {
                   <div className="mb-3">
                     <label className="form-label">Category</label>
                     <select
-                      className="form-select bg-dark text-light border-neon"
+                      className="form-select neon-input"
                       value={newTask.category}
                       onChange={(e) => setNewTask({ ...newTask, category: e.target.value })}
                     >
@@ -300,16 +318,16 @@ const Tasks = () => {
                     </select>
                   </div>
                 </div>
-                <div className="modal-footer border-neon">
+                <div className="modal-footer">
                   <button
                     type="button"
-                    className="btn btn-secondary"
+                    className="btn btn-outline-secondary"
                     onClick={() => setShowAddTask(false)}
                   >
                     Cancel
                   </button>
                   <button type="submit" className="btn btn-neon">
-                    Add Task
+                    <span>Add Task</span>
                   </button>
                 </div>
               </form>
@@ -317,7 +335,7 @@ const Tasks = () => {
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 };
 

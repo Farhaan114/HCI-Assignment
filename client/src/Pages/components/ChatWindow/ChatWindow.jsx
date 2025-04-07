@@ -4,9 +4,9 @@ import './ChatWindow.css';
 const ChatWindow = ({ currentChat, loading, error, generateSummary, summary }) => {
   if (!currentChat) {
     return (
-      <div className="chat-window empty">
+      <div className="chat-window">
         <div className="empty-state">
-          <h2>Welcome to Chat Bot!</h2>
+          <h2>Welcome to the task summarizer!</h2>
           <p>Start a new conversation or select an existing chat.</p>
         </div>
       </div>
@@ -46,7 +46,7 @@ const ChatWindow = ({ currentChat, loading, error, generateSummary, summary }) =
             disabled={loading}
             className="summary-button"
           >
-            Generate Summary
+            <span>Generate Summary</span>
           </button>
           {summary && (
             <div className="summary-content">

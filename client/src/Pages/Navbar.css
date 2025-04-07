@@ -1,0 +1,128 @@
+.neon-navbar {
+  background-color: var(--darker-bg);
+  padding: 1rem;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+  box-shadow: 0 2px 15px rgba(0, 255, 255, 0.1);
+}
+
+.neon-text {
+  color: var(--neon-text) !important;
+  font-size: 1.5rem !important;
+  font-weight: bold !important;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  background: linear-gradient(45deg, var(--neon-primary), var(--neon-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+}
+
+.neon-link {
+  color: var(--neon-text) !important;
+  padding: 0.5rem 1rem !important;
+  margin: 0 0.25rem;
+  display: flex !important;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.neon-link svg {
+  font-size: 1.2rem;
+}
+
+.neon-link:hover {
+  color: var(--neon-primary) !important;
+  text-shadow: 0 0 10px var(--neon-primary);
+}
+
+.neon-link.active {
+  color: var(--neon-primary) !important;
+  text-shadow: 0 0 10px var(--neon-primary);
+}
+
+.neon-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0.5rem;
+  right: 0.5rem;
+  height: 2px;
+  background: var(--neon-primary);
+  box-shadow: 0 0 10px var(--neon-primary);
+  animation: glow 1.5s ease-in-out infinite alternate;
+}
+
+.neon-username {
+  color: var(--neon-text) !important;
+  font-weight: 500;
+  padding: 0.5rem 1rem !important;
+  border-radius: 20px;
+  background: rgba(0, 255, 255, 0.1);
+  margin-right: 1rem;
+}
+
+.neon-btn-logout {
+  background: transparent !important;
+  border: 1px solid var(--neon-secondary) !important;
+  color: var(--neon-secondary) !important;
+  padding: 0.5rem 1.5rem !important;
+  border-radius: 20px !important;
+  transition: all 0.3s ease !important;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 500;
+}
+
+.neon-btn-logout:hover {
+  background: var(--neon-secondary) !important;
+  color: var(--darker-bg) !important;
+  box-shadow: 0 0 20px rgba(255, 0, 255, 0.4);
+  transform: translateY(-2px);
+}
+
+.navbar-toggler {
+  border-color: var(--neon-primary) !important;
+  padding: 0.5rem !important;
+}
+
+.navbar-toggler-icon {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(0, 255, 255, 0.8)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") !important;
+}
+
+@keyframes glow {
+  from {
+    box-shadow: 0 0 5px var(--neon-primary),
+                0 0 10px var(--neon-primary),
+                0 0 15px var(--neon-primary);
+  }
+  to {
+    box-shadow: 0 0 10px var(--neon-primary),
+                0 0 20px var(--neon-primary),
+                0 0 25px var(--neon-primary);
+  }
+}
+
+@media (max-width: 991.98px) {
+  .navbar-collapse {
+    background: var(--darker-bg);
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+    border: 1px solid rgba(0, 255, 255, 0.1);
+  }
+  
+  .neon-link {
+    margin: 0.5rem 0;
+  }
+  
+  .neon-username {
+    margin: 0.5rem 0;
+  }
+  
+  .neon-btn-logout {
+    width: 100%;
+    margin: 0.5rem 0;
+  }
+} 
