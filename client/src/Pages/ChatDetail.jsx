@@ -40,7 +40,7 @@ const ChatDetail = () => {
   }, [messages]);
 
   useEffect(() => {
-    const socketInstance = io('https://2fd1-182-74-172-122.ngrok-free.app', {
+    const socketInstance = io('https://c566-2401-4900-884c-38f1-6c14-ba36-ec54-f82f.ngrok-free.app', {
       extraHeaders: {
         'ngrok-skip-browser-warning': 'true'
       }
