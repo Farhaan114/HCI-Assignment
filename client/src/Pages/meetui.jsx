@@ -87,7 +87,10 @@ const Meet = () => {
             <h5 className="text-success mb-3">Participants</h5>
             <div className="participant-list">
               <div className="d-flex align-items-center mb-2">
-                <div className="participant-avatar bg-secondary rounded-circle me-2" style={{ width: '32px', height: '32px' }}></div>
+                <div
+                  className="participant-avatar bg-secondary rounded-circle me-2"
+                  style={{ width: "32px", height: "32px" }}
+                ></div>
                 <span className="text-light">You</span>
               </div>
               {/* Add more participants here */}
@@ -97,7 +100,7 @@ const Meet = () => {
 
         {/* Main Video Section */}
         <div className="col-8 p-2">
-          <div 
+          <div
             className="main-video-container bg-dark border border-secondary rounded-3 position-relative h-100"
             onMouseEnter={() => setShowControls(true)}
             onMouseLeave={() => setShowControls(false)}
@@ -117,14 +120,14 @@ const Meet = () => {
             />
 
             {/* Picture-in-Picture Video */}
-            <div 
+            <div
               className="pip-video-container position-absolute"
-              style={{ 
-                width: '225px', 
-                aspectRatio: '16/9',
-                bottom: showControls ? '80px' : '20px',
-                right: '20px',
-                transition: 'bottom 0.3s ease'
+              style={{
+                width: "225px",
+                aspectRatio: "16/9",
+                bottom: showControls ? "80px" : "20px",
+                right: "20px",
+                transition: "bottom 0.3s ease",
               }}
             >
               <div className="video-container bg-dark border border-secondary rounded-3 h-100 position-relative">
@@ -147,23 +150,29 @@ const Meet = () => {
             {/* Hover Controls */}
             {showControls && (
               <div className="position-absolute bottom-0 start-50 translate-middle-x mb-3 d-flex gap-3">
-                <button 
+                <button
                   className="btn btn-outline-success border-2 rounded-circle d-flex align-items-center justify-content-center p-0"
                   onClick={toggleMute}
-                  style={{ width: '40px', height: '40px' }}
+                  style={{ width: "40px", height: "40px" }}
                 >
-                  <i className={`bi ${isMuted ? 'bi-mic-mute' : 'bi-mic'} fs-5`}></i>
+                  <i
+                    className={`bi ${isMuted ? "bi-mic-mute" : "bi-mic"} fs-5`}
+                  ></i>
                 </button>
-                <button 
+                <button
                   className="btn btn-outline-success border-2 rounded-circle d-flex align-items-center justify-content-center p-0"
                   onClick={toggleVideo}
-                  style={{ width: '40px', height: '40px' }}
+                  style={{ width: "40px", height: "40px" }}
                 >
-                  <i className={`bi ${isVideoOff ? 'bi-camera-video-off' : 'bi-camera-video'} fs-5`}></i>
+                  <i
+                    className={`bi ${
+                      isVideoOff ? "bi-camera-video-off" : "bi-camera-video"
+                    } fs-5`}
+                  ></i>
                 </button>
-                <button 
+                <button
                   className="btn btn-outline-danger border-2 rounded-circle d-flex align-items-center justify-content-center p-0"
-                  style={{ width: '40px', height: '40px' }}
+                  style={{ width: "40px", height: "40px" }}
                   onClick={handleLeave}
                 >
                   <i className="bi bi-telephone-x fs-5"></i>
@@ -182,20 +191,27 @@ const Meet = () => {
             <div className="chat-messages flex-grow-1 p-3 overflow-auto">
               {/* Chat messages will go here */}
             </div>
-            <form onSubmit={handleSendMessage} className="p-3 border-top border-secondary mt-auto">
-              <div className="input-group">
-                <input
-                  type="text"
-                  className="form-control bg-dark text-light border-success border-2"
-                  placeholder="Type a message..."
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                />
-                <button className="btn btn-outline-success border-2" type="submit">
-                  Send
-                </button>
-              </div>
-            </form>
+            <div className="message-input-container d-flex align-items-center p-2">
+              <button className="emoji-btn btn btn-sm btn-outline-secondary mx-1">
+                <i className="far fa-smile"></i>
+              </button>
+              <button className="attachment-btn btn btn-sm btn-outline-secondary mx-1">
+                <i className="fas fa-paperclip"></i>
+              </button>
+              <input
+                type="text"
+                className="message-input form-control mx-1"
+                placeholder="Type a message..."
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+              />
+              <button className="voice-btn btn btn-sm btn-outline-secondary mx-1">
+                <i className="fas fa-microphone"></i>
+              </button>
+              <button className="send-btn btn btn-sm btn-outline-primary mx-1">
+                <i className="fas fa-paper-plane"></i>
+              </button>
+            </div>
           </div>
         </div>
       </div>
