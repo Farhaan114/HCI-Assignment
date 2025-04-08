@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Enhanced Photo vs Human Detector</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #0a0a0a;
+            color: #fff;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: rgba(20, 20, 20, 0.8);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+        }
+        h1 {
+            color: #fff;
+            text-align: center;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.7),
+                         0 0 20px rgba(0, 255, 255, 0.5),
+                         0 0 30px rgba(0, 255, 255, 0.3);
+            font-size: 2.5em;
+            margin-bottom: 30px;
+        }
+        .video-container {
+            width: 100%;
+            margin: 20px auto;
+            text-align: center;
+        }
+        #videoElement {
+            width: 100%;
+            max-width: 640px;
+            border: 2px solid rgba(0, 255, 255, 0.5);
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+        }
+        .controls {
+            margin: 20px 0;
+            text-align: center;
+        }
+        button {
+            background-color: transparent;
+            border: 2px solid #00ff00;
+            color: #00ff00;
+            padding: 12px 24px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            text-shadow: 0 0 5px rgba(0, 255, 0, 0.7);
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+        }
+        button:hover {
+            background-color: rgba(0, 255, 0, 0.1);
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+            transform: translateY(-2px);
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 4px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 18px;
+            border: 1px solid;
+            box-shadow: 0 0 10px;
+        }
+        .result-human {
+            background-color: rgba(0, 255, 0, 0.1);
+            color: #00ff00;
+            border-color: #00ff00;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
+        }
+        .result-photo {
+            background-color: rgba(255, 0, 0, 0.1);
+            color: #ff0000;
+            border-color: #ff0000;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
+        }
+        .result-waiting {
+            background-color: rgba(255, 255, 0, 0.1);
+            color: #ffff00;
+            border-color: #ffff00;
+            box-shadow: 0 0 15px rgba(255, 255, 0, 0.3);
+        }
+        .debug-info {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+            color: #00ffff;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+        }
+        .instructions {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-left: 4px solid #00ffff;
+            color: #fff;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+        }
+        .instructions h3 {
+            color: #00ffff;
+            text-shadow: 0 0 5px rgba(0, 255, 255, 0.7);
+            margin-top: 0;
+        }
+        .instructions ul {
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin: 10px 0;
+            color: #fff;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 255, 255, 0.5);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 255, 255, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Eye Gazing & Liveness Detection Module</h1>
+        
+        <div class="instructions">
+            <h3>Instructions:</h3>
+            <ul>
+                <li>Position your face in front of the camera</li>
+                <li>Keep reasonably still but natural (micro-movements are analyzed)</li>
+                <li>Try using a photo of a person to test detection</li>
+                <li>Wait at least 3-5 seconds for the system to analyze movements</li>
+            </ul>
+        </div>
+        
+        <div class="video-container">
+            <img id="videoElement" src="/video_feed" alt="Video Stream">
+        </div>
+        
+        <div class="controls">
+            <button id="resetButton" onclick="resetDetection()">Reset Detection</button>
+        </div>
+        
+        <div id="resultStatus" class="status result-waiting">
+            Waiting for detection results...
+        </div>
+        
+        <div id="debugInfo" class="debug-info">
+            Initializing system...
+        </div>
+    </div>
+
+    <script>
+        // Periodically check detection results
+        setInterval(function() {
+            fetch('/detection_result')
+                .then(response => response.json())
+                .then(data => {
+                    const resultElement = document.getElementById('resultStatus');
+                    const debugElement = document.getElementById('debugInfo');
+                    
+                    if (data.score > 0.5) {
+                        resultElement.className = 'status result-human';
+                        resultElement.textContent = `HUMAN (Score: ${data.score.toFixed(2)})`;
+                    } else {
+                        resultElement.className = 'status result-photo';
+                        resultElement.textContent = `PHOTO/FAKE (Score: ${data.score.toFixed(2)})`;
+                    }
+                    
+                    debugElement.textContent = data.debug_info;
+                })
+                .catch(error => console.error('Error fetching detection result:', error));
+        }, 500);
+        
+        function resetDetection() {
+            fetch('/reset_detection', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const resultElement = document.getElementById('resultStatus');
+                        resultElement.className = 'status result-waiting';
+                        resultElement.textContent = 'Waiting for detection results...';
+                        document.getElementById('debugInfo').textContent = 'Detection reset. Collecting new data...';
+                    }
+                })
+                .catch(error => console.error('Error resetting detection:', error));
+        }
+    </script>
+</body>
+</html>
+    

@@ -16,7 +16,7 @@ const Navbar = () => {
   return (
     <nav className="navbar navbar-expand-lg neon-navbar">
       <div className="container-fluid">
-        <span className="navbar-brand neon-text">ProcesseX</span>
+        <span className="navbar-brand neon-text">Process.X</span>
         <button 
           className="navbar-toggler" 
           type="button" 
